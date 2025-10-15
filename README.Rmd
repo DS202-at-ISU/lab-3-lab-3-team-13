@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Lab report #3 - instructions
 
+## Alexis Pachonphai 
+
 Follow the instructions posted at https://ds202-at-isu.github.io/labs.html for the lab assignment. The work is meant to be finished during the lab time, but you have time until Monday evening to polish things.
 
 Include your answers in this document (Rmd file). Make sure that it knits properly (into the md file). Upload both the Rmd and the md file to your repository.  
@@ -25,15 +27,59 @@ Submit a link to your repository on Canvas (only one submission per team) to sig
 Extract from the data below two data sets in long form `deaths` and `returns`
 
 ```{r}
+
+library(tidyverse)
+library(readr)
+
 av <- read.csv("https://raw.githubusercontent.com/fivethirtyeight/data/master/avengers/avengers.csv", stringsAsFactors = FALSE)
+
 head(av)
 ```
 
 Get the data into a format where the five columns for Death[1-5] are replaced by two columns: Time, and Death. Time should be a number between 1 and 5 (look into the function `parse_number`); Death is a categorical variables with values "yes", "no" and "". Call the resulting data set `deaths`. 
 
+```{r}
+
+deaths <- av %>%
+  pivot_longer(cols = starts_with("Death"),
+               names_to = "Time",
+               values_to = "Death") %>%
+  mutate(Time = parse_number(Time)) %>%          # extract 1–5
+  filter(Death != "")                            # remove empty strings
+
+head(deaths)
+
+```
+
 Similarly, deal with the returns of characters.
 
+```{r}
+
+returns <- av %>%
+  pivot_longer(cols = starts_with("Return"),
+               names_to = "Time",
+               values_to = "Return") %>%
+  mutate(Time = parse_number(Time)) %>%
+  filter(Return != "")
+
+head(returns)
+
+```
+
 Based on these datasets calculate the average number of deaths an Avenger suffers. 
+
+
+```{r}
+
+# count the number of non-empty "yes"/"no" death entries per hero
+avg_deaths <- deaths %>%
+  group_by(URL) %>%
+  summarize(num_deaths = sum(tolower(Death) == "yes")) %>%
+  summarize(mean_deaths = mean(num_deaths))
+
+avg_deaths
+
+```
 
 ## Individually
 
@@ -45,11 +91,36 @@ Each team member picks one of the statements in the FiveThirtyEight [analysis](h
 
 > Quote the statement you are planning to fact-check.
 
+
+> “If Iron Man fakes his death to chill out for a while but all his friends (and the reader) know he’s just kicking it somewhere, he didn’t die.”
+
 ### Include the code
 
 Make sure to include the code to derive the (numeric) fact for the statement
 
+```{r}
+
+# Focus on Tony Stark (Iron Man)
+ironman <- deaths %>%
+  filter(grepl("Tony", Name.Alias, ignore.case = TRUE) |
+         grepl("Iron", Name.Alias, ignore.case = TRUE))
+
+ironman
+
+ironman_summary <- ironman %>%
+  group_by(Name.Alias) %>%
+  count(Death)
+
+ironman_summary
+
+
+
+```
+
 ### Include your answer
+
+According to the Avengers dataset, Tony Stark (Iron Man) has one confirmed “YES” under the death column, meaning he officially died once in the comics. This matches the FiveThirtyEight statement that if Iron Man fakes his death but everyone knows he’s still alive, it doesn’t really count as dying. The data shows that fake or temporary deaths aren’t treated the same as actual ones — Iron Man only has one real death recorded out of all his appearances. This supports the idea that the dataset focuses on genuine, canonical deaths instead of storylines where a character just disappears or pretends to die.
+
 
 Include at least one sentence discussing the result of your fact-checking endeavor.
 
